@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>QR Code Scanner</title>
+  <title>QR Code Scanner with Camera Toggle</title>
   <script src="https://unpkg.com/html5-qrcode"></script>
   <style>
     body {
@@ -17,6 +17,24 @@
       width: 100%;
       height: 50vh;
       background: #000;
+    }
+
+    #controls {
+      padding: 10px;
+      background: #f0f0f0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    #toggle-camera {
+      padding: 8px 16px;
+      font-size: 16px;
+      border: none;
+      background-color: #007bff;
+      color: white;
+      border-radius: 4px;
+      cursor: pointer;
     }
 
     #scanned-results {
@@ -40,17 +58,49 @@
 <body>
 
   <div id="reader"></div>
+  <div id="controls">
+    <button id="toggle-camera">Switch Camera</button>
+  </div>
   <div id="scanned-results"></div>
 
   <script>
     const html5QrCode = new Html5Qrcode("reader");
     const scannedResultsDiv = document.getElementById("scanned-results");
+    const toggleButton = document.getElementById("toggle-camera");
 
     let lastScanned = [];
+    let currentFacingMode = "environment"; // start with back camera
+    let isScanning = false;
+
+    const startScanner = async () => {
+      if (isScanning) {
+        await html5QrCode.stop();
+        isScanning = false;
+      }
+
+      html5QrCode.start(
+        { facingMode: currentFacingMode },
+        {
+          fps: 10,
+          qrbox: { width: 300, height: 300 },
+          aspectRatio: 1.777,
+          videoConstraints: {
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
+          }
+        },
+        onScanSuccess,
+        onScanFailure
+      ).then(() => {
+        isScanning = true;
+        console.log("✅ Scanner started on", currentFacingMode);
+      }).catch(err => {
+        console.error("❌ Failed to start scanner:", err);
+      });
+    };
 
     const onScanSuccess = (decodedText, decodedResult) => {
       console.log("✅ QR Code detected:", decodedText);
-
       if (lastScanned[0] === decodedText) return;
 
       lastScanned.unshift(decodedText);
@@ -69,22 +119,12 @@
       console.debug("Frame processed, no QR code found.");
     };
 
-    html5QrCode.start(
-      { facingMode: "environment" },
-      {
-        fps: 10,
-        qrbox: { width: 300, height: 300 },
-        aspectRatio: 1.777,
-        videoConstraints: {
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
-        }
-      },
-      onScanSuccess,
-      onScanFailure
-    ).catch(err => {
-      console.error("❌ Failed to start QR scanner:", err);
+    toggleButton.addEventListener("click", async () => {
+      currentFacingMode = currentFacingMode === "environment" ? "user" : "environment";
+      await startScanner();
     });
+
+    startScanner(); // Start on load
   </script>
 </body>
 </html>
