@@ -95,11 +95,13 @@
     };
 
     const onScanFailure = () => {
-      // silent per-frame fail
+        console.error("QR Code not detected");
     };
 
     async function startScanner(cameraId) {
       if (isScanning) {
+        console.log("Scanning started");
+        
         await html5QrCode.stop();
         isScanning = false;
       }
