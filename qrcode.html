@@ -11,15 +11,28 @@
       display: flex;
       flex-direction: column;
       height: 100vh;
+      overflow: hidden;
     }
 
     #reader {
       width: 100%;
-      height: 30vh; /* Smaller height for large monitors */
+      max-height: 30vh;
       background: #000;
+      position: relative;
+      z-index: 1;
+      overflow: hidden;
+    }
+
+    #reader > video {
+      width: 100% !important;
+      height: auto !important;
+      max-height: 100% !important;
+      object-fit: contain;
     }
 
     #controls {
+      z-index: 2;
+      position: relative;
       padding: 10px;
       background: #f0f0f0;
       text-align: center;
