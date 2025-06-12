@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>QR Code Scanner</title>
+  <script src="https://unpkg.com/html5-qrcode"></script>
+</head>
+<body>
+  <div id="reader" style="width:300px;"></div>
+  <script>
+    const qrCodeSuccessCallback = (decodedText, decodedResult) => {
+      alert(`QR Code detected: ${decodedText}`);
+    };
+
+    const html5QrCode = new Html5Qrcode("reader");
+    html5QrCode.start(
+      { facingMode: "environment" }, // back camera
+      { fps: 10, qrbox: 250 },
+      qrCodeSuccessCallback
+    ).catch(err => console.error("Camera error", err));
+  </script>
+</body>
+</html>
