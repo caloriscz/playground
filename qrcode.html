@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>QR Code Scanner with Camera Toggle</title>
+  <title>QR Code Scanner with Camera Picker</title>
   <script src="https://unpkg.com/html5-qrcode"></script>
   <style>
     body {
@@ -11,7 +11,6 @@
       display: flex;
       flex-direction: column;
       height: 100vh;
-      overflow: hidden;
     }
 
     #reader {
@@ -23,7 +22,7 @@
       overflow: hidden;
     }
 
-    #reader > video {
+    #reader video {
       width: 100% !important;
       height: auto !important;
       max-height: 100% !important;
@@ -38,14 +37,9 @@
       text-align: center;
     }
 
-    #toggle-camera {
-      padding: 10px 20px;
+    select {
       font-size: 16px;
-      border: none;
-      background-color: #007bff;
-      color: white;
-      border-radius: 4px;
-      cursor: pointer;
+      padding: 6px;
     }
 
     #scanned-results {
@@ -70,47 +64,21 @@
 
   <div id="reader"></div>
   <div id="controls">
-    <button id="toggle-camera">Switch Camera</button>
+    <label for="camera-select">Select Camera:</label>
+    <select id="camera-select"></select>
   </div>
   <div id="scanned-results"></div>
 
   <script>
     const html5QrCode = new Html5Qrcode("reader");
+    const cameraSelect = document.getElementById("camera-select");
     const scannedResultsDiv = document.getElementById("scanned-results");
-    const toggleButton = document.getElementById("toggle-camera");
 
     let lastScanned = [];
-    let currentFacingMode = "environment"; // start with back camera
     let isScanning = false;
+    let currentCameraId = null;
 
-    const startScanner = async () => {
-      if (isScanning) {
-        await html5QrCode.stop();
-        isScanning = false;
-      }
-
-      html5QrCode.start(
-        { facingMode: currentFacingMode },
-        {
-          fps: 10,
-          qrbox: { width: 250, height: 250 },
-          aspectRatio: 1.777,
-          videoConstraints: {
-            width: { ideal: 1280 },
-            height: { ideal: 720 }
-          }
-        },
-        onScanSuccess,
-        onScanFailure
-      ).then(() => {
-        isScanning = true;
-        console.log("✅ Scanner started on", currentFacingMode);
-      }).catch(err => {
-        console.error("❌ Failed to start scanner:", err);
-      });
-    };
-
-    const onScanSuccess = (decodedText, decodedResult) => {
+    const onScanSuccess = (decodedText) => {
       console.log("✅ QR Code detected:", decodedText);
       if (lastScanned[0] === decodedText) return;
 
@@ -126,16 +94,54 @@
       }
     };
 
-    const onScanFailure = (errorMessage) => {
-      console.debug("Frame processed, no QR code found.");
+    const onScanFailure = () => {
+      // silent per-frame fail
     };
 
-    toggleButton.addEventListener("click", async () => {
-      currentFacingMode = currentFacingMode === "environment" ? "user" : "environment";
-      await startScanner();
-    });
+    async function startScanner(cameraId) {
+      if (isScanning) {
+        await html5QrCode.stop();
+        isScanning = false;
+      }
 
-    startScanner(); // Start on load
+      await html5QrCode.start(
+        cameraId,
+        {
+          fps: 10,
+          qrbox: { width: 250, height: 250 }
+        },
+        onScanSuccess,
+        onScanFailure
+      );
+      isScanning = true;
+      currentCameraId = cameraId;
+      console.log("🎥 Using camera:", cameraId);
+    }
+
+    async function initCameraOptions() {
+      const devices = await Html5Qrcode.getCameras();
+      if (devices.length === 0) {
+        alert("No camera found.");
+        return;
+      }
+
+      // Populate the dropdown
+      devices.forEach(device => {
+        const option = document.createElement("option");
+        option.value = device.id;
+        option.text = device.label || `Camera ${cameraSelect.length + 1}`;
+        cameraSelect.appendChild(option);
+      });
+
+      // Start with first camera
+      await startScanner(devices[0].id);
+
+      cameraSelect.addEventListener("change", async () => {
+        await startScanner(cameraSelect.value);
+      });
+    }
+
+    initCameraOptions();
   </script>
 </body>
 </html>
