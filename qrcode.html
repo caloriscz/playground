@@ -33,7 +33,7 @@
       border: 1px solid #ddd;
       border-radius: 4px;
       font-size: 16px;
-      word-break: break-all;
+      word-break: break-word;
     }
   </style>
 </head>
@@ -49,15 +49,13 @@
     let lastScanned = [];
 
     const onScanSuccess = (decodedText, decodedResult) => {
-      // Avoid duplicate consecutive scan
+      console.log("✅ QR Code detected:", decodedText);
+
       if (lastScanned[0] === decodedText) return;
 
-      // Add to beginning of array
       lastScanned.unshift(decodedText);
-      // Keep only last 5
       lastScanned = lastScanned.slice(0, 5);
 
-      // Render to screen
       scannedResultsDiv.innerHTML = '';
       for (const text of lastScanned) {
         const div = document.createElement("div");
@@ -67,15 +65,26 @@
       }
     };
 
-    // Start scanning
+    const onScanFailure = (errorMessage) => {
+      console.debug("Frame processed, no QR code found.");
+    };
+
     html5QrCode.start(
       { facingMode: "environment" },
-      { fps: 10, qrbox: { width: 250, height: 250 } },
-      onScanSuccess
+      {
+        fps: 10,
+        qrbox: { width: 300, height: 300 },
+        aspectRatio: 1.777,
+        videoConstraints: {
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        }
+      },
+      onScanSuccess,
+      onScanFailure
     ).catch(err => {
-      console.error("QR scanning failed:", err);
+      console.error("❌ Failed to start QR scanner:", err);
     });
   </script>
 </body>
 </html>
-
