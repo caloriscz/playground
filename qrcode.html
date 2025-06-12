@@ -1,22 +1,81 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>QR Code Scanner</title>
   <script src="https://unpkg.com/html5-qrcode"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: sans-serif;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+
+    #reader {
+      width: 100%;
+      height: 50vh;
+      background: #000;
+    }
+
+    #scanned-results {
+      flex: 1;
+      padding: 10px;
+      overflow-y: auto;
+      background: #f9f9f9;
+    }
+
+    .code-entry {
+      background: #fff;
+      padding: 8px;
+      margin-bottom: 6px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 16px;
+      word-break: break-all;
+    }
+  </style>
 </head>
 <body>
-  <div id="reader" style="width:900px;"></div>
+
+  <div id="reader"></div>
+  <div id="scanned-results"></div>
+
   <script>
-    const qrCodeSuccessCallback = (decodedText, decodedResult) => {
-      alert(`QR Code detected: ${decodedText}`);
+    const html5QrCode = new Html5Qrcode("reader");
+    const scannedResultsDiv = document.getElementById("scanned-results");
+
+    let lastScanned = [];
+
+    const onScanSuccess = (decodedText, decodedResult) => {
+      // Avoid duplicate consecutive scan
+      if (lastScanned[0] === decodedText) return;
+
+      // Add to beginning of array
+      lastScanned.unshift(decodedText);
+      // Keep only last 5
+      lastScanned = lastScanned.slice(0, 5);
+
+      // Render to screen
+      scannedResultsDiv.innerHTML = '';
+      for (const text of lastScanned) {
+        const div = document.createElement("div");
+        div.className = "code-entry";
+        div.textContent = text;
+        scannedResultsDiv.appendChild(div);
+      }
     };
 
-    const html5QrCode = new Html5Qrcode("reader");
+    // Start scanning
     html5QrCode.start(
-      { facingMode: "environment" }, // back camera
-      { fps: 10, qrbox: 250, height: 600 },
-      qrCodeSuccessCallback
-    ).catch(err => console.error("Camera error", err));
+      { facingMode: "environment" },
+      { fps: 10, qrbox: { width: 250, height: 250 } },
+      onScanSuccess
+    ).catch(err => {
+      console.error("QR scanning failed:", err);
+    });
   </script>
 </body>
 </html>
+
